@@ -7,7 +7,7 @@
     "rootDir": "./src",
     "removeComments": true,
     "declaration": true,
-    "isolatedModules": true,
+    // "isolatedModules": true,
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
