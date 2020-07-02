@@ -9,7 +9,14 @@ import router from './router'
 const app = express()
 
 // set security HTTP headers
+// ✅ Do not allow DNS prefetching
 app.use(helmet())
+
+// ✅ Only allow your site to be loading in an iFrame on your own pages.
+app.use(helmet.frameguard({ action: 'sameorigin' }))
+
+// ✅ Only allow your site to send the referrer for your own pages
+app.use(helmet.referrerPolicy({ policy: 'same-origin' }))
 
 // parse json request body
 app.use(bodyParser.json())
@@ -17,7 +24,7 @@ app.use(bodyParser.json())
 // parse urlencoded request body
 app.use(bodyParser.urlencoded({ extended: true }))
 
-// gzip compression
+// 🚀 gzip compression
 app.use(compression())
 
 // enable cors
