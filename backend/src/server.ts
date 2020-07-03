@@ -9,7 +9,7 @@ const connection = connect()
 
 connection
   .on('error', console.log)
-  // .on('disconnected', connect)
+  .on('disconnected', connect)
   .once('open', listen)
 
 // Start server

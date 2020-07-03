@@ -1,9 +1,10 @@
 import express from 'express'
 
-import * as controller from './controller'
+import * as threadController from './controllers/thread.controller'
 
 const router = express.Router()
 
-router.get('/', controller.getExample)
+// Threads
+router.post('/threads/:board', threadController.createThread)
 
 export default router

@@ -31,7 +31,7 @@ app.use(compression())
 app.use(cors())
 
 // Routes
-app.use(router)
+app.use('/api', router)
 
 // 404 Not Found Middleware
 app.use((req, res, next) => {
