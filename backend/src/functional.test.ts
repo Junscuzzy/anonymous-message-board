@@ -31,6 +31,8 @@ describe('Functional Tests', () => {
         expect(res.body).toHaveProperty('createdAt')
         expect(res.body).toHaveProperty('bumpedAt')
         expect(res.body.reported).toBeFalsy()
+        expect(Array.isArray(res.body.replies)).toBe(true)
+        expect(res.body.replies).toBeArray()
         done()
       })
 
