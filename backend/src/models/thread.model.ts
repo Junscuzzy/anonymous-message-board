@@ -41,3 +41,8 @@ export async function getById(id: string) {
   const thread = await Thread.findById(id)
   return thread
 }
+
+export async function getRecentThreads(board: string) {
+  const result = await Thread.find({ board }).sort({ bumpedAt: -1 }).limit(10)
+  return result
+}

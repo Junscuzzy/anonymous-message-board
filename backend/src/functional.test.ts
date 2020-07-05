@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 
 import app from './app'
 import config, { getMongoUri } from './config'
-import { Thread } from './models/thread.model'
+import { Thread, IThread } from './models/thread.model'
 import { Reply } from './models/reply.model'
 
 function isToday(date: string) {
@@ -14,6 +14,7 @@ function isToday(date: string) {
 
 describe('Functional Tests', () => {
   let testThread: any
+  let testThread2: any
 
   beforeAll(async () => {
     const url = getMongoUri('functional-tests')
@@ -21,10 +22,29 @@ describe('Functional Tests', () => {
 
     // create testing thread
     const { body } = await request(app).post('/api/threads/board-test').send({
-      text: 'Thread test text for replies keep',
+      text: 'Thread test text for replies keep A',
       password: 's3cr3t',
     })
     testThread = body
+    const res = await request(app).post('/api/threads/board-test').send({
+      text: 'Thread test text for replies keep B',
+      password: 's3cr3t',
+    })
+    testThread2 = res.body
+
+    async function createReply(i: number) {
+      await request(app)
+        .post('/api/replies/board-test')
+        .send({
+          text: `reply text ${i}`,
+          password: 's3cr3t',
+          threadId: testThread2._id,
+        })
+    }
+
+    for (let i = 0; i < 6; i++) {
+      await createReply(i)
+    }
   })
 
   afterAll(async () => {
@@ -79,7 +99,50 @@ describe('Functional Tests', () => {
       })
     })
 
-    // describe('GET', () => {})
+    describe('GET', () => {
+      test('Should return an array of 10 threads max', async done => {
+        const res = await request(app).get('/api/threads/board-test')
+
+        expect(res.status).toEqual(200)
+        expect(res.body.length).toBeLessThanOrEqual(10)
+        expect(res.body[0]).toHaveProperty('_id')
+        expect(res.body[0]).not.toHaveProperty('password')
+        expect(res.body[0]).not.toHaveProperty('reported')
+
+        done()
+      })
+
+      test('Each thread must contains max 3 items', async done => {
+        const res = await request(app).get('/api/threads/board-test')
+
+        expect(res.body[0]).toHaveProperty('replies')
+
+        res.body.forEach((thread: IThread) => {
+          expect(thread.replies.length).toBeLessThanOrEqual(3)
+        })
+        done()
+      })
+
+      test('Should return an empty array if havent thread', async done => {
+        const res = await request(app).get('/api/threads/board-un-exists')
+
+        expect(res.status).toEqual(200)
+        expect(res.body.length).toBeLessThanOrEqual(0)
+
+        done()
+      })
+
+      test('Should return the full thread if threadId passed', async done => {
+        const url = `/api/threads/board-test?threadId=${testThread2._id}`
+        const res = await request(app).get(url)
+
+        expect(res.status).toEqual(200)
+        expect(res.body).toBeArrayOfSize(1)
+        expect(res.body[0].replies.length).toBeGreaterThanOrEqual(5)
+
+        done()
+      })
+    })
 
     // describe('DELETE', () => {})
 
