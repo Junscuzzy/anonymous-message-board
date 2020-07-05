@@ -20,6 +20,7 @@ export const mongoose = {
   options: {
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    useFindAndModify: false,
   },
 }
 

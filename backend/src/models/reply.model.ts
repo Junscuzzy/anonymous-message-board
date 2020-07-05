@@ -1,5 +1,6 @@
-import { Schema, Document } from 'mongoose'
+import mongoose, { Schema, Document } from 'mongoose'
 
+// Interface
 export interface IReply extends Document {
   text: string
   createdAt: any
@@ -7,9 +8,20 @@ export interface IReply extends Document {
   password: string
 }
 
+// Schema
 export const ReplySchema: Schema<IReply> = new Schema({
   text: { type: String, required: true },
   createdAt: { type: Date, default: new Date() },
   reported: { type: Boolean, default: false },
   password: { type: String, required: true },
 })
+
+// Model
+export const Reply = mongoose.model<IReply>('Reply', ReplySchema)
+
+// Methods
+export async function create(props: Pick<IReply, 'text' | 'password'>) {
+  const reply = new Reply(props)
+  const result = await reply.save()
+  return result
+}

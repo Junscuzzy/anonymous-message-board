@@ -36,3 +36,8 @@ export async function create(
   const result = await thread.save()
   return result
 }
+
+export async function getById(id: string) {
+  const thread = await Thread.findById(id)
+  return thread
+}
