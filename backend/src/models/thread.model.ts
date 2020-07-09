@@ -46,3 +46,8 @@ export async function getRecentThreads(board: string) {
   const result = await Thread.find({ board }).sort({ bumpedAt: -1 }).limit(10)
   return result
 }
+
+export async function deleteThread(id: string) {
+  const result = await Thread.findByIdAndDelete(id)
+  return result
+}

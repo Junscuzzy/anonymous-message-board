@@ -15,22 +15,42 @@ function isToday(date: string) {
 describe('Functional Tests', () => {
   let testThread: any
   let testThread2: any
+  let threadToDeleteWin: any
+  let threadToDeleteFail: any
 
-  beforeAll(async () => {
+  beforeAll(async done => {
     const url = getMongoUri('functional-tests')
     await mongoose.connect(url, config.mongoose.options)
 
     // create testing thread
-    const { body } = await request(app).post('/api/threads/board-test').send({
-      text: 'Thread test text for replies keep A',
-      password: 's3cr3t',
-    })
-    testThread = body
-    const res = await request(app).post('/api/threads/board-test').send({
-      text: 'Thread test text for replies keep B',
-      password: 's3cr3t',
-    })
-    testThread2 = res.body
+    const { body: a } = await request(app)
+      .post('/api/threads/board-test')
+      .send({
+        text: 'Thread test text for replies keep A',
+        password: 's3cr3t',
+      })
+    testThread = a
+    const { body: b } = await request(app)
+      .post('/api/threads/board-test')
+      .send({
+        text: 'Thread test text for replies keep B',
+        password: 's3cr3t',
+      })
+    testThread2 = b
+    const { body: c } = await request(app)
+      .post('/api/threads/board-test')
+      .send({
+        text: 'Thread will be successful deleted',
+        password: 's3cr3t',
+      })
+    threadToDeleteWin = c
+    const { body: d } = await request(app)
+      .post('/api/threads/board-test')
+      .send({
+        text: 'Thread will failing to delete',
+        password: 's3cr3t',
+      })
+    threadToDeleteFail = d
 
     async function createReply(i: number) {
       await request(app)
@@ -45,13 +65,15 @@ describe('Functional Tests', () => {
     for (let i = 0; i < 6; i++) {
       await createReply(i)
     }
+    done()
   })
 
-  afterAll(async () => {
+  afterAll(async done => {
     // Delete all Threads except text contain "keep" word
     // const regex = new RegExp(/^(.(?!(keep)))*$/)
     await Thread.deleteMany({})
     await Reply.deleteMany({})
+    done()
   })
 
   describe('API ROUTING FOR /api/threads/:board', () => {
@@ -123,7 +145,7 @@ describe('Functional Tests', () => {
         done()
       })
 
-      test('Should return an empty array if havent thread', async done => {
+      test("Should return an empty array if haven't thread", async done => {
         const res = await request(app).get('/api/threads/board-un-exists')
 
         expect(res.status).toEqual(200)
@@ -140,11 +162,54 @@ describe('Functional Tests', () => {
         expect(res.body).toBeArrayOfSize(1)
         expect(res.body[0].replies.length).toBeGreaterThanOrEqual(5)
 
+        expect(res.body[0]).toHaveProperty('_id')
+        expect(res.body[0]).not.toHaveProperty('password')
+        expect(res.body[0]).not.toHaveProperty('reported')
+
         done()
       })
     })
 
-    // describe('DELETE', () => {})
+    describe('DELETE', () => {
+      test('I can delete a thread with password & _id', async done => {
+        const res = await request(app).delete('/api/threads/board-test').send({
+          password: threadToDeleteWin.password,
+          threadId: threadToDeleteWin._id,
+        })
+
+        expect(res.body.message).toEqual('thread successful deleted')
+        done()
+      })
+
+      test("I can't delete a thread if password missing", async done => {
+        console.log(threadToDeleteFail)
+        const res = await request(app)
+          .delete('/api/threads/board-test')
+          .send({ threadId: threadToDeleteFail._id })
+
+        expect(res.body.message).toEqual('incorrect password')
+        done()
+      })
+
+      test("I can't delete a thread if password wrong", async done => {
+        const res = await request(app).delete('/api/threads/board-test').send({
+          password: 'wrong-password',
+          threadId: threadToDeleteFail._id,
+        })
+
+        expect(res.body.message).toEqual('incorrect password')
+        done()
+      })
+
+      test("I can't delete a thread if doesn't exists", async done => {
+        const res = await request(app)
+          .delete('/api/threads/board-test')
+          .send({ password: 'test', threadId: 'abcdef' })
+
+        expect(res.body.message).toEqual('incorrect password')
+        done()
+      })
+    })
 
     // describe('PUT', () => {})
   })

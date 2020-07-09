@@ -56,3 +56,31 @@ export const getThread: ControllerFn = async (req, res) => {
     return res.json([])
   }
 }
+
+export const deleteThread: ControllerFn = async (req, res) => {
+  try {
+    const { threadId, password } = req.body
+
+    // Get thread
+    if (!threadId || typeof threadId !== 'string') {
+      throw new Error()
+    }
+    const thread = await Thread.getById(threadId)
+
+    // Check password
+    if (password !== thread?.password) {
+      throw new Error()
+    }
+
+    const deleted = await Thread.deleteThread(thread?._id)
+
+    // Check successful deleted
+    if (!deleted) {
+      throw new Error()
+    }
+
+    return res.status(200).json({ message: 'thread successful deleted' })
+  } catch (error) {
+    return res.json({ message: 'incorrect password' })
+  }
+}
