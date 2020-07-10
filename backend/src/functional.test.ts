@@ -78,7 +78,9 @@ describe('Functional Tests', () => {
       await createReply(i, deleteReply._id)
     }
 
+    // update with children replies
     deleteReply = await Thread.findById(deleteReply._id)
+    testThread2 = await Thread.findById(testThread2._id)
 
     done()
   })
@@ -317,7 +319,19 @@ describe('Functional Tests', () => {
 
     //     describe('GET', () => {})
 
-    //     describe('PUT', () => {})
+    describe('PUT', () => {
+      test('should report a reply', async done => {
+        const res = await request(app).put('/api/replies/board-test').send({
+          threadId: testThread2._id,
+          replyId: testThread2.replies[0]._id,
+        })
+
+        expect(res.status).toEqual(200)
+        expect(res.body.message).toEqual('Success')
+        expect(res.body.thread.replies[0].reported).toBeTruthy()
+        done()
+      })
+    })
 
     describe('DELETE', () => {
       test('I can delete a reply with password & threadId & replyId', async done => {

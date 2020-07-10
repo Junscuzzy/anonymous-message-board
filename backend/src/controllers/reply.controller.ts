@@ -3,8 +3,15 @@ import { ControllerFn } from '../types'
 import * as Thread from '../models/thread.model'
 import * as Reply from '../models/reply.model'
 
-function objectIdToString(id: string) {
+function objectIdToString(id: string): string {
   return Mongoose.Types.ObjectId(id).toHexString()
+}
+
+function isValidParam(param: any): boolean {
+  if (!param || typeof param !== 'string' || param.trim() === '') {
+    return false
+  }
+  return true
 }
 
 export const postReply: ControllerFn = async (req, res) => {
@@ -12,7 +19,7 @@ export const postReply: ControllerFn = async (req, res) => {
   const { text, password, threadId } = req.body
 
   try {
-    if (!threadId || threadId.trim() === '') {
+    if (!isValidParam(threadId)) {
       return res.json({ message: 'Thread id is missing' })
     }
     // Create a Reply
@@ -48,7 +55,7 @@ export const deleteReply: ControllerFn = async (req, res) => {
     const { threadId, replyId, password } = req.body
 
     // Get thread
-    if (!threadId || typeof threadId !== 'string') throw new Error()
+    if (!isValidParam(threadId)) throw new Error()
     const thread = await Thread.getById(threadId)
     if (!thread?.replies?.length) throw new Error()
 
@@ -67,5 +74,23 @@ export const deleteReply: ControllerFn = async (req, res) => {
       .json({ message: 'reply successful deleted', thread: newThread })
   } catch (error) {
     return res.json({ message: 'incorrect password' })
+  }
+}
+
+export const reportReply: ControllerFn = async (req, res) => {
+  try {
+    const { threadId, replyId } = req.body
+    if (!(isValidParam(threadId) && isValidParam(replyId))) {
+      throw new Error()
+    }
+
+    const query = { _id: threadId, 'replies._id': replyId }
+    const update = { $set: { 'replies.$.reported': true } }
+    const options = { new: true }
+    const thread = await Thread.Thread.findOneAndUpdate(query, update, options)
+
+    return res.status(200).json({ message: 'Success', thread })
+  } catch (error) {
+    return res.json({ message: 'unable to report' })
   }
 }

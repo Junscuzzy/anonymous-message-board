@@ -14,5 +14,6 @@ router.put('/threads/:board', threadController.reportThread)
 // Replies
 router.post('/replies/:board', replyController.postReply)
 router.delete('/replies/:board', replyController.deleteReply)
+router.put('/replies/:board', replyController.reportReply)
 
 export default router
