@@ -12,5 +12,6 @@ router.delete('/threads/:board', threadController.deleteThread)
 
 // Replies
 router.post('/replies/:board', replyController.postReply)
+router.delete('/replies/:board', replyController.deleteReply)
 
 export default router

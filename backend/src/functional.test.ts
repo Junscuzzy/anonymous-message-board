@@ -17,6 +17,7 @@ describe('Functional Tests', () => {
   let testThread2: any
   let threadToDeleteWin: any
   let threadToDeleteFail: any
+  let deleteReply: any
 
   beforeAll(async done => {
     const url = getMongoUri('functional-tests')
@@ -51,20 +52,34 @@ describe('Functional Tests', () => {
         password: 's3cr3t',
       })
     threadToDeleteFail = d
+    const { body: e } = await request(app)
+      .post('/api/threads/board-test')
+      .send({
+        text: 'Thread for replies delete tests',
+        password: 's3cr3t',
+      })
+    deleteReply = e
 
-    async function createReply(i: number) {
+    async function createReply(i: number, threadId?: string) {
       await request(app)
         .post('/api/replies/board-test')
         .send({
           text: `reply text ${i}`,
           password: 's3cr3t',
-          threadId: testThread2._id,
+          threadId:
+            typeof threadId !== 'undefined' ? threadId : testThread2._id,
         })
     }
 
     for (let i = 0; i < 6; i++) {
       await createReply(i)
     }
+    for (let i = 0; i < 2; i++) {
+      await createReply(i, deleteReply._id)
+    }
+
+    deleteReply = await Thread.findById(deleteReply._id)
+
     done()
   })
 
@@ -182,7 +197,6 @@ describe('Functional Tests', () => {
       })
 
       test("I can't delete a thread if password missing", async done => {
-        console.log(threadToDeleteFail)
         const res = await request(app)
           .delete('/api/threads/board-test')
           .send({ threadId: threadToDeleteFail._id })
@@ -294,6 +308,37 @@ describe('Functional Tests', () => {
 
     //     describe('PUT', () => {})
 
-    //     describe('DELETE', () => {})
+    describe('DELETE', () => {
+      test('I can delete a reply with password & threadId & replyId', async done => {
+        const res = await request(app).delete('/api/replies/board-test').send({
+          password: deleteReply.replies[1].password,
+          replyId: deleteReply.replies[1]._id,
+          threadId: deleteReply._id,
+        })
+
+        expect(res.body.message).toEqual('reply successful deleted')
+        expect(res.body.thread.replies[1].text).toEqual('[deleted]')
+        done()
+      })
+
+      test("I can' delete a reply without password", async done => {
+        const res = await request(app).delete('/api/replies/board-test').send({
+          replyId: deleteReply.replies[1]._id,
+          threadId: deleteReply._id,
+        })
+
+        expect(res.body.message).toEqual('incorrect password')
+        done()
+      })
+
+      test("I can' delete a reply without if not found", async done => {
+        const res = await request(app).delete('/api/replies/board-test').send({
+          password: deleteReply.replies[1].password,
+        })
+
+        expect(res.body.message).toEqual('incorrect password')
+        done()
+      })
+    })
   })
 })

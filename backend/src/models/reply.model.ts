@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose'
+import { Thread } from './thread.model'
 
 // Interface
 export interface IReply extends Document {
@@ -24,4 +25,16 @@ export async function create(props: Pick<IReply, 'text' | 'password'>) {
   const reply = new Reply(props)
   const result = await reply.save()
   return result
+}
+
+export async function updateReply(
+  text: string,
+  replyId: string,
+  threadId: string,
+) {
+  const query = { _id: threadId, 'replies._id': replyId }
+  const update = { $set: { 'replies.$.text': text } }
+  const options = { new: true }
+  const thread = await Thread.findOneAndUpdate(query, update, options)
+  return thread
 }
