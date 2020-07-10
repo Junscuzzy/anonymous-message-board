@@ -9,6 +9,7 @@ const router = express.Router()
 router.post('/threads/:board', threadController.createThread)
 router.get('/threads/:board', threadController.getThread)
 router.delete('/threads/:board', threadController.deleteThread)
+router.put('/threads/:board', threadController.reportThread)
 
 // Replies
 router.post('/replies/:board', replyController.postReply)

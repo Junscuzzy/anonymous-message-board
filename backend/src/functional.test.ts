@@ -225,7 +225,18 @@ describe('Functional Tests', () => {
       })
     })
 
-    // describe('PUT', () => {})
+    describe('PUT', () => {
+      test('should report a thread', async done => {
+        const res = await request(app).put('/api/threads/board-test').send({
+          threadId: testThread._id,
+        })
+
+        expect(res.status).toEqual(200)
+        expect(res.body.message).toEqual('Success')
+        expect(res.body.thread.reported).toBeTruthy()
+        done()
+      })
+    })
   })
 
   describe('API ROUTING FOR /api/replies/:board', () => {

@@ -84,3 +84,21 @@ export const deleteThread: ControllerFn = async (req, res) => {
     return res.json({ message: 'incorrect password' })
   }
 }
+
+export const reportThread: ControllerFn = async (req, res) => {
+  try {
+    const { threadId } = req.body
+    if (!threadId || typeof threadId !== 'string') {
+      throw new Error()
+    }
+
+    const update = { reported: true }
+    const thread = await Thread.Thread.findByIdAndUpdate(threadId, update, {
+      new: true,
+    })
+
+    return res.status(200).json({ message: 'Success', thread })
+  } catch (error) {
+    return res.json({ message: 'unable to report' })
+  }
+}
