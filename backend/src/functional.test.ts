@@ -3,8 +3,8 @@ import mongoose from 'mongoose'
 
 import app from './app'
 import config, { getMongoUri } from './config'
-import { Thread, IThread } from './models/thread.model'
-import { Reply } from './models/reply.model'
+import Thread, { IThread } from './thread/thread.model'
+import { Reply } from './reply/reply.model'
 
 function isToday(date: string) {
   const today = new Date().toLocaleDateString()

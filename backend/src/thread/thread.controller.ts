@@ -1,9 +1,10 @@
 import { ControllerFn } from '../types'
-import * as Thread from '../models/thread.model'
+import Thread, { IThread } from './thread.model'
 
 // Utils
+
 // Remove "password" & "reported" fields from threads & replies recursively
-function excludePassAReport(threads: Thread.IThread[]) {
+function excludePassAReport(threads: IThread[]) {
   return threads.map(({ createdAt, bumpedAt, _id, board, text, replies }) => ({
     createdAt,
     bumpedAt,
@@ -19,9 +20,15 @@ function excludePassAReport(threads: Thread.IThread[]) {
 export const createThread: ControllerFn = async (req, res) => {
   const { board } = req.params
   const { text, password } = req.body
+  const props: Pick<IThread, 'text' | 'password' | 'board'> = {
+    board,
+    text,
+    password,
+  }
   try {
-    const results = await Thread.create({ board, text, password })
-    return res.status(201).json(results)
+    const thread = new Thread(props)
+    const result = await thread.save()
+    return res.status(201).json(result)
   } catch (error) {
     return res.json(error)
   }
@@ -35,13 +42,15 @@ export const getThread: ControllerFn = async (req, res) => {
 
   try {
     if (threadId && typeof threadId === 'string') {
-      const thread = await Thread.getById(threadId)
+      const thread = await Thread.findById(threadId)
       results = [thread]
     } else {
-      const threads = await Thread.getRecentThreads(board)
+      const threads = await Thread.find({ board })
+        .sort({ bumpedAt: -1 })
+        .limit(10)
 
       // Get the 3 lasts replies
-      results = threads.map((thread: Thread.IThread) => {
+      results = threads.map((thread: IThread) => {
         const tmp = thread
         tmp.replies = tmp.replies.slice(0, 3)
         return tmp
@@ -65,14 +74,14 @@ export const deleteThread: ControllerFn = async (req, res) => {
     if (!threadId || typeof threadId !== 'string') {
       throw new Error()
     }
-    const thread = await Thread.getById(threadId)
+    const thread = await Thread.findById(threadId)
 
     // Check password
     if (password !== thread?.password) {
       throw new Error()
     }
 
-    const deleted = await Thread.deleteThread(thread?._id)
+    const deleted = await Thread.findByIdAndDelete(thread?._id)
 
     // Check successful deleted
     if (!deleted) {
@@ -93,7 +102,7 @@ export const reportThread: ControllerFn = async (req, res) => {
     }
 
     const update = { reported: true }
-    const thread = await Thread.Thread.findByIdAndUpdate(threadId, update, {
+    const thread = await Thread.findByIdAndUpdate(threadId, update, {
       new: true,
     })
 

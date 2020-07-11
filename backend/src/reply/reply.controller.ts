@@ -1,7 +1,7 @@
 import Mongoose from 'mongoose'
 import { ControllerFn } from '../types'
-import * as Thread from '../models/thread.model'
-import * as Reply from '../models/reply.model'
+import Thread from '../thread/thread.model'
+import Reply from './reply.model'
 
 function objectIdToString(id: string): string {
   return Mongoose.Types.ObjectId(id).toHexString()
@@ -15,7 +15,6 @@ function isValidParam(param: any): boolean {
 }
 
 export const postReply: ControllerFn = async (req, res) => {
-  //   const { board } = req.params
   const { text, password, threadId } = req.body
 
   try {
@@ -23,16 +22,16 @@ export const postReply: ControllerFn = async (req, res) => {
       return res.json({ message: 'Thread id is missing' })
     }
     // Create a Reply
-    const reply = await Reply.create({ text, password })
+    const reply = new Reply({ text, password })
+    const newReply = await reply.save()
 
-    // Push reply in Threads
-    // & update bumped date
-    const thread = await Thread.Thread.findByIdAndUpdate(
+    // Push reply in Threads & update bumped date
+    const thread = await Thread.findByIdAndUpdate(
       threadId,
       {
         bumpedAt: new Date(),
         $push: {
-          replies: reply,
+          replies: newReply,
         },
       },
       {
@@ -56,7 +55,7 @@ export const deleteReply: ControllerFn = async (req, res) => {
 
     // Get thread
     if (!isValidParam(threadId)) throw new Error()
-    const thread = await Thread.getById(threadId)
+    const thread = await Thread.findById(threadId)
     if (!thread?.replies?.length) throw new Error()
 
     // Find the reply and check password
@@ -67,7 +66,10 @@ export const deleteReply: ControllerFn = async (req, res) => {
     if (!reply) throw new Error()
 
     // update reply
-    const newThread = await Reply.updateReply('[deleted]', replyId, threadId)
+    const query = { _id: threadId, 'replies._id': replyId }
+    const update = { $set: { 'replies.$.text': '[deleted]' } }
+    const options = { new: true }
+    const newThread = await Thread.findOneAndUpdate(query, update, options)
 
     return res
       .status(200)
@@ -87,7 +89,7 @@ export const reportReply: ControllerFn = async (req, res) => {
     const query = { _id: threadId, 'replies._id': replyId }
     const update = { $set: { 'replies.$.reported': true } }
     const options = { new: true }
-    const thread = await Thread.Thread.findOneAndUpdate(query, update, options)
+    const thread = await Thread.findOneAndUpdate(query, update, options)
 
     return res.status(200).json({ message: 'Success', thread })
   } catch (error) {
